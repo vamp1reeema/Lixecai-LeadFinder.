@@ -1,29 +1,23 @@
 import html
 
-async def send_lead(session, token, chat_id, chat_title, message, keyword):
-    text = (message.message or "").strip()
+async def send_lead(session, token, chat_id, source, message_id, text, keyword):
     excerpt = text[:1200] + ("…" if len(text) > 1200 else "")
-    username = getattr(message.chat, "username", None)
-    if username:
-        link = f"https://t.me/{username}/{message.id}"
-    else:
-        raw_id = str(message.chat_id)
-        link = f"https://t.me/c/{raw_id[4:]}/{message.id}" if raw_id.startswith("-100") else ""
-
+    link = f"https://t.me/{source}/{message_id}"
     lines = [
-        "🔎 <b>Найден потенциальный клиент</b>",
-        f"💬 <b>Чат:</b> {html.escape(chat_title or 'Без названия')}",
+        "🔎 <b>Найдено сообщение с потенциальной заявкой</b>",
+        f"💬 <b>Публичный источник:</b> {html.escape(source)}",
         f"🎯 <b>Совпадение:</b> {html.escape(keyword)}",
         "",
-        html.escape(excerpt)
+        html.escape(excerpt),
+        "",
+        f'<a href="{link}">Открыть сообщение</a>'
     ]
-    if link:
-        lines += ["", f'<a href="{html.escape(link, quote=True)}">Открыть сообщение</a>']
-
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     async with session.post(url, json={
-        "chat_id": chat_id, "text": "\n".join(lines),
-        "parse_mode": "HTML", "disable_web_page_preview": True
+        "chat_id": chat_id,
+        "text": "\n".join(lines),
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True
     }) as response:
         result = await response.json()
         if response.status != 200 or not result.get("ok"):
