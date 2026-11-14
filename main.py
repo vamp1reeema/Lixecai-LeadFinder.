@@ -6,7 +6,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 
 from config import BOT_TOKEN, BOT_CHAT_ID, SETTINGS
-from database import connect, get_last_id, set_last_id
+from database import connect, get_last_id, set_last_id, get_flag, set_flag
 from filters import find_keyword, looks_like_spam
 from notifier import send_lead, send_status
 
@@ -76,9 +76,10 @@ async def run():
         async with aiohttp.ClientSession(timeout=timeout, headers=headers) as http:
             sources = SETTINGS.get("public_sources", [])
             logging.info("Публичных источников в списке: %s", len(sources))
-            if os.getenv("SEND_TEST", "").strip().lower() == "true":
+            if get_flag(conn, "telegram_status_sent") != "true":
                 await send_status(http, BOT_TOKEN, BOT_CHAT_ID, len(sources))
-                logging.info("Тестовое сообщение успешно отправлено в Telegram")
+                set_flag(conn, "telegram_status_sent", "true")
+                logging.info("Одноразовое сообщение о подключении успешно отправлено в Telegram")
             for source in sources:
                 try:
                     await scan_source(http, conn, source)
