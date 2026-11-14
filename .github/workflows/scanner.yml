@@ -2,6 +2,12 @@ name: LeadFinder
 
 on:
   workflow_dispatch:
+    inputs:
+      send_test:
+        description: "Отправить одно тестовое сообщение в Telegram"
+        required: false
+        type: boolean
+        default: true
   schedule:
     - cron: "*/15 * * * *"
 
@@ -31,4 +37,5 @@ jobs:
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           BOT_CHAT_ID: ${{ secrets.BOT_CHAT_ID }}
+          SEND_TEST: ${{ inputs.send_test || false }}
         run: python main.py
