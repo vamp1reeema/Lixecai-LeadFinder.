@@ -2,6 +2,12 @@ name: LeadFinder
 
 on:
   workflow_dispatch:
+    inputs:
+      test_mode:
+        description: "Повторно проверить последние посты, не меняя базу"
+        required: false
+        type: boolean
+        default: false
   schedule:
     - cron: "*/15 * * * *"
 
@@ -31,4 +37,5 @@ jobs:
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           BOT_CHAT_ID: ${{ secrets.BOT_CHAT_ID }}
+          TEST_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.test_mode && '1' || '0' }}
         run: python main.py
