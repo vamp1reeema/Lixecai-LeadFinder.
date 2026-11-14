@@ -5,7 +5,7 @@ import aiohttp
 from bs4 import BeautifulSoup
 
 from config import BOT_TOKEN, BOT_CHAT_ID, SETTINGS
-from database import connect, get_last_id, set_last_id, get_flag, set_flag
+from database import connect, get_last_id, set_last_id
 from filters import find_keyword, looks_like_spam
 from notifier import send_lead, send_status
 
@@ -17,26 +17,15 @@ def extract_messages(page_html, source):
     """Extract posts from Telegram's public web preview."""
     soup = BeautifulSoup(page_html, "html.parser")
     found = []
-
-    # Telegram puts data-post on .tgme_widget_message, not necessarily
-    # on the surrounding .tgme_widget_message_wrap element.
     for item in soup.select("[data-post]"):
         post = item.get("data-post", "")
         match = re.fullmatch(re.escape(source) + r"/(\d+)", post)
         if not match:
             continue
-
         text_node = item.select_one(".tgme_widget_message_text")
-        if text_node:
-            message_text = text_node.get_text(" ", strip=True)
-        else:
-            message_text = ""
-
-        # Keep textless posts too so media-only posts do not block the
-        # cursor forever. They cannot match lead keywords.
+        message_text = text_node.get_text(" ", strip=True) if text_node else ""
         found.append((int(match.group(1)), message_text))
 
-    # A few layouts may put data-post on a wrapper; avoid duplicate IDs.
     unique = {}
     for message_id, message_text in found:
         if message_id not in unique or (not unique[message_id] and message_text):
@@ -71,26 +60,27 @@ def log_page_diagnostics(page, source, content_type):
 
 
 async def scan_source(http, conn, source):
+    stats = {"checked": 0, "leads": 0, "errors": 0}
     if not isinstance(source, str) or not SOURCE_RE.fullmatch(source):
         logging.warning("Пропущен некорректный username источника: %r", source)
-        return
+        stats["errors"] += 1
+        return stats
 
     url = f"https://t.me/s/{source}"
     async with http.get(url) as response:
         content_type = response.headers.get("Content-Type", "unknown")
         if response.status != 200:
             logging.warning("Источник %s недоступен: HTTP %s", source, response.status)
-            return
+            stats["errors"] += 1
+            return stats
         page = await response.text()
 
     log_page_diagnostics(page, source, content_type)
     messages = extract_messages(page, source)
     if not messages:
-        logging.warning(
-            "Для %s не извлечено ни одного поста; курсор не изменён",
-            source
-        )
-        return
+        logging.warning("Для %s не извлечено ни одного поста; курсор не изменён", source)
+        stats["errors"] += 1
+        return stats
 
     logging.info(
         "Источник %s: извлечено постов=%s, текстовых=%s",
@@ -99,6 +89,7 @@ async def scan_source(http, conn, source):
     last_id = get_last_id(conn, source)
     limit = max(1, int(SETTINGS.get("scan_limit_per_source", 40)))
     new_messages = [m for m in messages if m[0] > last_id][-limit:]
+    stats["checked"] = len(new_messages)
     logging.info("Источник %s: новых постов для проверки: %s", source, len(new_messages))
 
     for message_id, message_text in new_messages:
@@ -112,11 +103,14 @@ async def scan_source(http, conn, source):
                 await send_lead(
                     http, BOT_TOKEN, BOT_CHAT_ID, source, message_id, message_text, keyword
                 )
+                stats["leads"] += 1
                 logging.info("Уведомление отправлено: %s/%s", source, message_id)
             except Exception:
+                stats["errors"] += 1
                 logging.exception("Не удалось отправить уведомление; остановка источника")
-                return
+                return stats
         set_last_id(conn, source, message_id)
+    return stats
 
 
 async def run():
@@ -134,15 +128,31 @@ async def run():
         async with aiohttp.ClientSession(timeout=timeout, headers=headers) as http:
             sources = SETTINGS.get("public_sources", [])
             logging.info("Публичных источников в списке: %s", len(sources))
-            if get_flag(conn, "telegram_status_sent") != "true":
-                await send_status(http, BOT_TOKEN, BOT_CHAT_ID, len(sources))
-                set_flag(conn, "telegram_status_sent", "true")
-                logging.info("Одноразовое сообщение о подключении успешно отправлено в Telegram")
+            total = {"checked": 0, "leads": 0, "errors": 0}
             for source in sources:
                 try:
-                    await scan_source(http, conn, source)
+                    result = await scan_source(http, conn, source)
+                    for key in total:
+                        total[key] += result[key]
                 except Exception:
+                    total["errors"] += 1
                     logging.exception("Ошибка при проверке источника %s", source)
+
+            logging.info(
+                "Итог сканирования: проверено=%s, заявок=%s, ошибок=%s",
+                total["checked"], total["leads"], total["errors"]
+            )
+            try:
+                await send_status(
+                    http, BOT_TOKEN, BOT_CHAT_ID, len(sources),
+                    total["checked"], total["leads"], total["errors"]
+                )
+                logging.info("Отчёт о сканировании отправлен в Telegram")
+            except Exception:
+                logging.exception(
+                    "Не удалось отправить отчёт в Telegram. Проверь BOT_TOKEN и BOT_CHAT_ID."
+                )
+                raise
     finally:
         conn.close()
 
