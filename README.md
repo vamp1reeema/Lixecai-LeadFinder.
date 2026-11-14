@@ -1,2 +1,43 @@
-# Lixecai-LeadFinder.
-Telegram lead finder for websites and bots.
+# Lixecai LeadFinder
+
+Бесплатный сканер Telegram для поиска сообщений от людей, которым могут быть нужны сайты, лендинги, Telegram-боты или автоматизация.
+
+## Возможности
+- Читает группы и каналы, доступные твоему Telegram-аккаунту.
+- Ищет фразы из `settings.json`.
+- Отправляет совпадения в твой Telegram-бот.
+- Не пишет потенциальным клиентам и не рассылает сообщения.
+- Запоминает последний обработанный ID сообщения.
+
+Важно: сканер не читает весь Telegram. Доступны только чаты и каналы, которые видит твой аккаунт.
+
+## GitHub Secrets
+В репозитории открой **Settings → Secrets and variables → Actions** и создай пять Secrets:
+- `TELEGRAM_API_ID`
+- `TELEGRAM_API_HASH`
+- `TELEGRAM_SESSION`
+- `BOT_TOKEN`
+- `BOT_CHAT_ID`
+
+Никому не отправляй эти значения. StringSession даёт доступ к Telegram-аккаунту — храни её как пароль. Не добавляй секреты в файлы репозитория.
+
+## Создание TELEGRAM_SESSION на Android
+1. Установи Termux из официального источника.
+2. Выполни `pkg update && pkg install python`.
+3. Выполни `pip install telethon`.
+4. Скачай `generate_session.py` из репозитория.
+5. Запусти `python generate_session.py`, введи API ID и API Hash и подтверди вход в Telegram.
+6. Скопируй выведенную строку напрямую в GitHub Secret `TELEGRAM_SESSION`. Не вставляй её сюда.
+
+## Запуск
+После добавления всех Secrets открой **Actions → LeadFinder → Run workflow**. Затем GitHub Actions будет запускать сканер примерно каждые 15 минут. Расписание может задерживаться; это не круглосуточный сервер.
+
+## Настройка
+Меняй `keywords`, `ignore_words` и лимиты в `settings.json`.
+
+## Ограничения
+- Только чаты и каналы, доступные аккаунту.
+- До 100 новых сообщений на чат за запуск.
+- Бесплатные лимиты GitHub Actions могут меняться.
+- Состояние хранится через Actions cache; кэш не является гарантированным постоянным хранилищем.
+- Соблюдай правила Telegram и не используй результаты для навязчивой рассылки.
