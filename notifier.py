@@ -1,11 +1,13 @@
 import html
 
-async def send_status(session, token, chat_id, source_count):
+async def send_status(session, token, chat_id, source_count, checked, leads, errors):
     text = (
-        "🟢 <b>Lixecai LeadFinder на связи!</b>\n"
-        "Telegram-бот успешно отвечает.\n"
-        f"Источников для проверки: <b>{source_count}</b>.\n"
-        "Сейчас проверяю публичные ленты на новые заявки."
+        "🟢 <b>Lixecai LeadFinder: сканирование завершено</b>\n"
+        f"Источников в настройках: <b>{source_count}</b>\n"
+        f"Новых постов проверено: <b>{checked}</b>\n"
+        f"Потенциальных заявок отправлено: <b>{leads}</b>\n"
+        f"Ошибок источников/отправки: <b>{errors}</b>\n"
+        + ("Новых совпадений пока нет." if leads == 0 else "Заявки отправлены выше.")
     )
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     async with session.post(url, json={
