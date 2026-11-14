@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import re
 import aiohttp
 from bs4 import BeautifulSoup
@@ -19,7 +20,7 @@ def extract_messages(page_html, source):
     found = []
     for item in soup.select("[data-post]"):
         post = item.get("data-post", "")
-        match = re.fullmatch(re.escape(source) + r"/(\d+)", post)
+        match = re.fullmatch(re.escape(source) + r"/(\\d+)", post)
         if not match:
             continue
         text_node = item.select_one(".tgme_widget_message_text")
@@ -55,12 +56,12 @@ def log_page_diagnostics(page, source, content_type):
         markers or "none"
     )
     if not data_posts:
-        excerpt = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))[:350]
+        excerpt = re.sub(r"\\s+", " ", soup.get_text(" ", strip=True))[:350]
         logging.info("Фрагмент ответа %s: %r", source, excerpt or page[:350])
 
 
-async def scan_source(http, conn, source):
-    stats = {"checked": 0, "leads": 0, "errors": 0}
+async def scan_source(http, conn, source, test_mode=False):
+    stats = {"checked": 0, "leads": 0, "errors": 0, "matches": 0}
     if not isinstance(source, str) or not SOURCE_RE.fullmatch(source):
         logging.warning("Пропущен некорректный username источника: %r", source)
         stats["errors"] += 1
@@ -78,7 +79,7 @@ async def scan_source(http, conn, source):
     log_page_diagnostics(page, source, content_type)
     messages = extract_messages(page, source)
     if not messages:
-        logging.warning("Для %s не извлечено ни одного поста; курсор не изменён", source)
+        logging.warning("Для %s не извлечено ни одного поста", source)
         stats["errors"] += 1
         return stats
 
@@ -88,17 +89,34 @@ async def scan_source(http, conn, source):
     )
     last_id = get_last_id(conn, source)
     limit = max(1, int(SETTINGS.get("scan_limit_per_source", 40)))
-    new_messages = [m for m in messages if m[0] > last_id][-limit:]
-    stats["checked"] = len(new_messages)
-    logging.info("Источник %s: новых постов для проверки: %s", source, len(new_messages))
 
-    for message_id, message_text in new_messages:
+    if test_mode:
+        # Test mode deliberately re-checks the latest posts and never changes
+        # the saved cursor, so the normal scanner's state remains untouched.
+        selected_messages = messages[-limit:]
+        logging.info("ТЕСТ: %s — повторно проверяем последние %s постов без изменения базы",
+                     source, len(selected_messages))
+    else:
+        selected_messages = [m for m in messages if m[0] > last_id][-limit:]
+        logging.info("Источник %s: новых постов для проверки: %s",
+                     source, len(selected_messages))
+
+    stats["checked"] = len(selected_messages)
+    for message_id, message_text in selected_messages:
         keyword = find_keyword(message_text, SETTINGS.get("keywords", []))
-        if keyword and not looks_like_spam(
+        is_spam = looks_like_spam(
             message_text,
             SETTINGS.get("ignore_words", []),
             int(SETTINGS.get("min_message_length", 20))
-        ):
+        )
+        if keyword:
+            stats["matches"] += 1
+            logging.info(
+                "%s Совпадение: %s/%s keyword=%r spam=%s text=%r",
+                "ТЕСТ:" if test_mode else "",
+                source, message_id, keyword, is_spam, message_text[:240]
+            )
+        if keyword and not is_spam:
             try:
                 await send_lead(
                     http, BOT_TOKEN, BOT_CHAT_ID, source, message_id, message_text, keyword
@@ -109,11 +127,14 @@ async def scan_source(http, conn, source):
                 stats["errors"] += 1
                 logging.exception("Не удалось отправить уведомление; остановка источника")
                 return stats
-        set_last_id(conn, source, message_id)
+
+        if not test_mode:
+            set_last_id(conn, source, message_id)
     return stats
 
 
 async def run():
+    test_mode = os.getenv("TEST_MODE", "").strip().lower() in ("1", "true", "yes", "on")
     conn = connect()
     timeout = aiohttp.ClientTimeout(total=30)
     headers = {
@@ -128,10 +149,11 @@ async def run():
         async with aiohttp.ClientSession(timeout=timeout, headers=headers) as http:
             sources = SETTINGS.get("public_sources", [])
             logging.info("Публичных источников в списке: %s", len(sources))
-            total = {"checked": 0, "leads": 0, "errors": 0}
+            logging.info("РЕЖИМ: %s", "ТЕСТОВЫЙ (база не изменяется)" if test_mode else "ОБЫЧНЫЙ")
+            total = {"checked": 0, "leads": 0, "errors": 0, "matches": 0}
             for source in sources:
                 try:
-                    result = await scan_source(http, conn, source)
+                    result = await scan_source(http, conn, source, test_mode=test_mode)
                     for key in total:
                         total[key] += result[key]
                 except Exception:
@@ -139,13 +161,15 @@ async def run():
                     logging.exception("Ошибка при проверке источника %s", source)
 
             logging.info(
-                "Итог сканирования: проверено=%s, заявок=%s, ошибок=%s",
-                total["checked"], total["leads"], total["errors"]
+                "Итог сканирования: проверено=%s, совпадений по ключам=%s, "
+                "заявок отправлено=%s, ошибок=%s",
+                total["checked"], total["matches"], total["leads"], total["errors"]
             )
             try:
                 await send_status(
                     http, BOT_TOKEN, BOT_CHAT_ID, len(sources),
-                    total["checked"], total["leads"], total["errors"]
+                    total["checked"], total["leads"], total["errors"],
+                    test_mode=test_mode, matches=total["matches"]
                 )
                 logging.info("Отчёт о сканировании отправлен в Telegram")
             except Exception:
