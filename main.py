@@ -18,7 +18,7 @@ def extract_messages(page_html, source):
     found = []
     for item in soup.select(".tgme_widget_message_wrap"):
         post = item.get("data-post", "")
-        match = re.fullmatch(re.escape(source) + r"/(\\d+)", post)
+        match = re.fullmatch(re.escape(source) + r"/(\d+)", post)
         if not match:
             continue
         text_node = item.select_one(".tgme_widget_message_text")
