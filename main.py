@@ -20,7 +20,7 @@ def extract_messages(page_html, source):
     found = []
     for item in soup.select("[data-post]"):
         post = item.get("data-post", "")
-        match = re.fullmatch(re.escape(source) + r"/(\\d+)", post)
+        match = re.fullmatch(re.escape(source) + r"/(\d+)", post)
         if not match:
             continue
         text_node = item.select_one(".tgme_widget_message_text")
@@ -56,7 +56,7 @@ def log_page_diagnostics(page, source, content_type):
         markers or "none"
     )
     if not data_posts:
-        excerpt = re.sub(r"\\s+", " ", soup.get_text(" ", strip=True))[:350]
+        excerpt = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))[:350]
         logging.info("Фрагмент ответа %s: %r", source, excerpt or page[:350])
 
 
