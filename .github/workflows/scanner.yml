@@ -14,6 +14,11 @@ on:
 permissions:
   contents: read
 
+# Не допускаем одновременную обработку одного и того же состояния.
+concurrency:
+  group: leadfinder-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   scan:
     runs-on: ubuntu-latest
