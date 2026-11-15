@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 from config import BOT_TOKEN, BOT_CHAT_ID, SETTINGS
 from database import connect, get_last_id, set_last_id
-from filters import find_keyword, looks_like_spam
+from filters import find_keyword, lead_rejection_reason
 from notifier import send_lead, send_status
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -104,17 +104,18 @@ async def scan_source(http, conn, source, test_mode=False):
     stats["checked"] = len(selected_messages)
     for message_id, message_text in selected_messages:
         keyword = find_keyword(message_text, SETTINGS.get("keywords", []))
-        is_spam = looks_like_spam(
+        rejection_reason = lead_rejection_reason(
             message_text,
             SETTINGS.get("ignore_words", []),
             int(SETTINGS.get("min_message_length", 20))
         )
+        is_spam = rejection_reason is not None
         if keyword:
             stats["matches"] += 1
             logging.info(
                 "%s Совпадение: %s/%s keyword=%r spam=%s text=%r",
                 "ТЕСТ:" if test_mode else "",
-                source, message_id, keyword, is_spam, message_text[:240]
+                source, message_id, keyword, rejection_reason or "пропущено фильтром", message_text[:240]
             )
         if keyword and not is_spam:
             try:
