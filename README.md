@@ -30,7 +30,7 @@
 Чтобы бот мог написать тебе, сначала открой его в Telegram и нажми Start.
 
 ## Запуск
-Открой **Actions → LeadFinder → Run workflow**. По расписанию GitHub Actions запускает сканер примерно раз в 15 минут; запуск может задерживаться. Это не круглосуточный сервер.
+Открой **Actions → LeadFinder → Run workflow**. По расписанию GitHub Actions запускает сканер примерно раз в 5 минут; запуск может задерживаться. Это не круглосуточный сервер.
 
 ## Настройка поиска
 Меняй `keywords`, `ignore_words`, `scan_limit_per_source` и `public_sources` в `settings.json`.
