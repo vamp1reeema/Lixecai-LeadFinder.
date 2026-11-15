@@ -34,6 +34,46 @@ def extract_messages(page_html, source):
     return sorted(unique.items(), key=lambda x: x[0])
 
 
+async def fetch_source_messages(http, source, limit):
+    """Fetch several Telegram preview pages so busy channels do not lose posts."""
+    collected = {}
+    before = None
+    page_count = max(1, min(5, (limit + 19) // 20 + 1))
+
+    for page_number in range(page_count):
+        url = f"https://t.me/s/{source}"
+        if before is not None:
+            url += f"?before={before}"
+
+        async with http.get(url) as response:
+            content_type = response.headers.get("Content-Type", "unknown")
+            if response.status != 200:
+                raise RuntimeError(f"HTTP {response.status} при чтении {source}")
+            page = await response.text()
+
+        if page_number == 0:
+            log_page_diagnostics(page, source, content_type)
+
+        page_messages = extract_messages(page, source)
+        if not page_messages:
+            break
+
+        previous_count = len(collected)
+        for message_id, message_text in page_messages:
+            if message_id not in collected or (not collected[message_id] and message_text):
+                collected[message_id] = message_text
+
+        oldest_id = min(message_id for message_id, _ in page_messages)
+        if len(collected) == previous_count or oldest_id <= 1:
+            break
+        before = oldest_id
+
+        if len(collected) >= limit:
+            break
+
+    return sorted(collected.items(), key=lambda item: item[0])[-limit:]
+
+
 def log_page_diagnostics(page, source, content_type):
     soup = BeautifulSoup(page, "html.parser")
     title_node = soup.title
@@ -67,17 +107,13 @@ async def scan_source(http, conn, source, test_mode=False):
         stats["errors"] += 1
         return stats
 
-    url = f"https://t.me/s/{source}"
-    async with http.get(url) as response:
-        content_type = response.headers.get("Content-Type", "unknown")
-        if response.status != 200:
-            logging.warning("Источник %s недоступен: HTTP %s", source, response.status)
-            stats["errors"] += 1
-            return stats
-        page = await response.text()
-
-    log_page_diagnostics(page, source, content_type)
-    messages = extract_messages(page, source)
+    limit = max(1, int(SETTINGS.get("scan_limit_per_source", 40)))
+    try:
+        messages = await fetch_source_messages(http, source, limit)
+    except Exception:
+        logging.exception("Не удалось получить публикации источника %s", source)
+        stats["errors"] += 1
+        return stats
     if not messages:
         logging.warning("Для %s не извлечено ни одного поста", source)
         stats["errors"] += 1
@@ -88,8 +124,6 @@ async def scan_source(http, conn, source, test_mode=False):
         source, len(messages), sum(bool(text.strip()) for _, text in messages)
     )
     last_id = get_last_id(conn, source)
-    limit = max(1, int(SETTINGS.get("scan_limit_per_source", 40)))
-
     if test_mode:
         # Test mode deliberately re-checks the latest posts and never changes
         # the saved cursor, so the normal scanner's state remains untouched.
