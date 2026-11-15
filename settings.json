@@ -4,7 +4,12 @@
     "digitaltender",
     "freelancetaverna",
     "normrabota",
-    "frilans"
+    "frilans",
+    "webfrl",
+    "job_developer",
+    "zerocode_jobs",
+    "devshr",
+    "zakaz_design"
   ],
   "keywords": [
     "нужен сайт",
@@ -29,6 +34,13 @@
     "нужна автоматизация"
   ],
   "scan_limit_per_source": 40,
-  "ignore_words": ["казино", "ставки", "крипто", "розыгрыш", "подпишись", "реферал"],
+  "ignore_words": [
+    "казино",
+    "ставки",
+    "крипто",
+    "розыгрыш",
+    "подпишись",
+    "реферал"
+  ],
   "min_message_length": 20
 }
