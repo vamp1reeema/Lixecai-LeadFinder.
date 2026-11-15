@@ -2,7 +2,9 @@
   "public_sources": [
     "GetClient",
     "digitaltender",
-    "freelancetaverna"
+    "freelancetaverna",
+    "normrabota",
+    "frilans"
   ],
   "keywords": [
     "нужен сайт",
