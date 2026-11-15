@@ -45,14 +45,23 @@ async def fetch_source_messages(http, source, limit):
         if before is not None:
             url += f"?before={before}"
 
-        async with http.get(url) as response:
+        async with http.get(url, allow_redirects=True) as response:
             content_type = response.headers.get("Content-Type", "unknown")
+            final_url = str(response.url)
+            redirect_chain = [
+                f"{item.status} -> {item.url}" for item in response.history
+            ]
             if response.status != 200:
-                raise RuntimeError(f"HTTP {response.status} при чтении {source}")
+                raise RuntimeError(
+                    f"HTTP {response.status} при чтении {source}; "
+                    f"final_url={final_url}; redirects={redirect_chain}"
+                )
             page = await response.text()
 
         if page_number == 0:
-            log_page_diagnostics(page, source, content_type)
+            log_page_diagnostics(
+                page, source, content_type, final_url, redirect_chain
+            )
 
         page_messages = extract_messages(page, source)
         if not page_messages:
@@ -74,7 +83,7 @@ async def fetch_source_messages(http, source, limit):
     return sorted(collected.items(), key=lambda item: item[0])[-limit:]
 
 
-def log_page_diagnostics(page, source, content_type):
+def log_page_diagnostics(page, source, content_type, final_url, redirect_chain):
     soup = BeautifulSoup(page, "html.parser")
     title_node = soup.title
     title = title_node.get_text(" ", strip=True) if title_node else "(no title)"
@@ -88,10 +97,21 @@ def log_page_diagnostics(page, source, content_type):
                               "not found", "unsupported", "cloudflare")
         if marker in lowered
     ]
+    final_path = response_path = final_url.split("?", 1)[0].rstrip("/")
+    expected_path = f"https://t.me/s/{source}"
+    if final_path == expected_path:
+        page_kind = "telegram_preview_path"
+    elif final_path.rstrip("/").endswith("/" + source):
+        page_kind = "channel_landing_or_redirect"
+    else:
+        page_kind = "unexpected_redirect_or_page"
+
     logging.info(
-        "Диагностика %s: content-type=%s, bytes=%s, title=%r, "
-        "data-post=%s, message_nodes=%s, wrappers=%s, text_nodes=%s, markers=%s",
-        source, content_type, len(page.encode("utf-8")), title[:160],
+        "Диагностика %s: content-type=%s, bytes=%s, requested=%s, final_url=%s, "
+        "redirects=%s, page_kind=%s, title=%r, data-post=%s, message_nodes=%s, "
+        "wrappers=%s, text_nodes=%s, markers=%s",
+        source, content_type, len(page.encode("utf-8")),
+        expected_path, final_url, redirect_chain or "none", page_kind, title[:160],
         len(data_posts), len(message_nodes), len(wrappers), len(text_nodes),
         markers or "none"
     )
