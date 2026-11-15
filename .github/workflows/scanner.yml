@@ -29,6 +29,10 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Test lead filters
+        run: python -m unittest -v test_filters.py
       - name: Restore scanner state
         uses: actions/cache@v4
         with:
@@ -36,8 +40,6 @@ jobs:
           key: leadfinder-state-${{ github.ref_name }}-${{ github.run_id }}
           restore-keys: |
             leadfinder-state-${{ github.ref_name }}-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
       - name: Run scanner
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
