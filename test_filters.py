@@ -54,6 +54,26 @@ class LeadFilterTests(unittest.TestCase):
     def test_keyword_detection_is_case_insensitive(self):
         self.assertEqual(find_keyword("НУЖЕН САЙТ для проекта", ["нужен сайт"]), "нужен сайт")
 
+    def test_accepts_b2b_landing_with_crm_mentioned_as_context(self):
+        text = "Срочный запрос: B2B-лендинг на Tilda, заявки будут передаваться в CRM вручную."
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+    def test_rejects_explicit_crm_integration(self):
+        text = "Нужно создать сайт и настроить интеграцию с CRM через API."
+        self.assertIn("интеграция CRM/ERP", lead_rejection_reason(text, IGNORE))
+
+    def test_rejects_explicit_1c_integration(self):
+        text = "Нужно разработать сайт с синхронизацией каталога и остатков с 1С."
+        self.assertIn("интеграция с 1С", lead_rejection_reason(text, IGNORE))
+
+    def test_accepts_simple_internet_shop_without_advanced_features(self):
+        text = "Заказ #901: создать простой сайт-каталог интернет-магазина, без корзины и онлайн-оплаты."
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+    def test_rejects_online_shop_with_checkout(self):
+        text = "Нужен интернет-магазин с корзиной, онлайн-оплатой и эквайрингом."
+        self.assertIn("интернет-магазин", lead_rejection_reason(text, IGNORE))
+
 
 if __name__ == "__main__":
     unittest.main()
