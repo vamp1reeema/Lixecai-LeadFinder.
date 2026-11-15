@@ -27,7 +27,6 @@ VACANCY_PATTERNS = [
     r"\b(ищем|нанимаем)\b.{0,100}\b(в команду|на работу|на позицию)\b",
 ]
 
-# Aggregated roundups are not individual requests from a customer.
 ROUNDUP_PATTERNS = [
     r"\b(подборка|дайджест|список)\s+(заказов|проектов|вакансий|заявок)\b",
     r"\bзаказы\s+в\s+категории\b",
@@ -45,6 +44,19 @@ PROMO_PATTERNS = [
     r"\bнаши проекты в боте\b",
 ]
 
+# Projects with product/backend scope that is risky for a beginner to promise.
+# Simple landing pages and brochure websites are intentionally not blocked.
+COMPLEX_SCOPE_PATTERNS = [
+    (r"\b(кошелек|кошелёк|платежн\w+ система|эквайринг|прием платежей|приём платежей)\b", "платежная система или кошелек"),
+    (r"\b(крипто|криптовалют|бирж\w+|трейдинг|prediction market|polymarket)\b", "крипто- или торговый функционал"),
+    (r"\b(vpn[- ]?сервис|vpn[- ]?сервер|продажа подписок|подписочн\w+ сервис)\b", "VPN или система подписок"),
+    (r"\b(личный кабинет|регистрац\w+ пользователей|авторизац\w+|логин[- ]парол\w+)\b.{0,100}\b(оплат|заказ|услуг|кошел|crm|модерац|подписк)\w*", "личные кабинеты со сложной бизнес-логикой"),
+    (r"\b(маркетплейс|агрегатор услуг|система бронирования|бронирован\w+ система)\b", "маркетплейс или система бронирования"),
+    (r"\b(видеотрансляц\w+|стриминг|видеохостинг|обработк\w+ видео)\b", "видеосервис"),
+    (r"\b(telegram mini app|mini app|мини[- ]приложени\w+)\b", "Telegram Mini App или мини-приложение"),
+    (r"\b(crm|erp|интеграци\w+ с 1с|синхронизац\w+ с 1с)\b", "CRM/ERP или интеграция с 1С"),
+]
+
 BUYER_INTENT_PATTERNS = [
     r"\b(мне нужен|нам нужен|нужен|нужна|нужно|нужны)\b",
     r"\b(ищу|ищем)\b.{0,100}\b(исполнител|фрилансер|человек|специалист|разработчик|дизайнер)\w*\b",
@@ -52,6 +64,11 @@ BUYER_INTENT_PATTERNS = [
     r"\b(подскажите|посоветуйте)\b.{0,100}\b(исполнител|разработчик|дизайнер|сделать|создать)\w*\b",
     r"\b(хочу заказать|хотим заказать|готов(а|ы) оплатить|бюджет на разработку)\b",
     r"\b(кто возьмется|кто возьмётся)\b",
+    # Many order channels publish compact cards such as "Заказ #123 Создать сайт".
+    r"\bзаказ\s*#?\s*\d+\b",
+    r"\b(нужно|необходимо)\s+(сделать|создать|разработать|сверстать)\b",
+    r"\b(создать|сделать|разработать|сверстать)\s+(сайт|лендинг|телеграм[- ]?бот|telegram[- ]?бот|бот)\b",
+    r"\b(разработка|создание|верстка|доработка)\s+(сайта|лендинга|бота)\b",
 ]
 
 
@@ -63,6 +80,7 @@ def lead_rejection_reason(text, ignore_words, min_length=20):
     normalized = normalize(text)
     if len(normalized) < min_length:
         return "короткое сообщение"
+
     ignored = next(
         (normalize(word) for word in ignore_words if normalize(word) in normalized),
         None
@@ -75,6 +93,11 @@ def lead_rejection_reason(text, ignore_words, min_length=20):
         return "вакансия или поиск сотрудника"
     if _matches_any(normalized, PROMO_PATTERNS):
         return "реклама или агрегатор"
+
+    for pattern, reason in COMPLEX_SCOPE_PATTERNS:
+        if re.search(pattern, normalized, re.IGNORECASE):
+            return f"слишком сложный проект: {reason}"
+
     if not _matches_any(normalized, BUYER_INTENT_PATTERNS):
         return "нет явного намерения заказать услугу"
     return None
