@@ -94,6 +94,18 @@ class LeadFilterTests(unittest.TestCase):
         text = "Нужен интернет-магазин с корзиной, онлайн-оплатой и эквайрингом."
         self.assertIn("интернет-магазин", lead_rejection_reason(text, IGNORE))
 
+    def test_rejects_self_promotion_with_portfolio(self):
+        text = "Делаю сайты на Tilda, моё портфолио и кейсы по ссылке."
+        self.assertEqual(lead_rejection_reason(text, IGNORE), "самореклама исполнителя")
+
+    def test_accepts_customer_request_for_turnkey_site(self):
+        text = "Нужен сайт под ключ для небольшой кофейни, бюджет обсудим."
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+    def test_rejects_freelancer_seeking_clients(self):
+        text = "Веб-разработчик, свободен для новых проектов, ищу клиентов."
+        self.assertEqual(lead_rejection_reason(text, IGNORE), "самореклама исполнителя")
+
 
 if __name__ == "__main__":
     unittest.main()
