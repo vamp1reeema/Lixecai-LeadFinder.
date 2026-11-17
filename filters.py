@@ -35,6 +35,13 @@ ROUNDUP_PATTERNS = [
     r"\bсмотрите\s+(все\s+)?заказы\b",
 ]
 
+SELF_PROMO_PATTERNS = [
+    r"\\b(делаю|создаю|разрабатываю|собираю|верстаю)\\b.{0,70}\\b(сайт|сайты|лендинг|лендинги|бот|боты)\\b",
+    r"\\b(сайты|лендинги|телеграм[- ]?боты)\\b.{0,50}\\b(под ключ|на заказ)\\b",
+    r"\\b(предлагаю услуги|оказываю услуги|возьму в работу|беру в работу|ищу проекты|ищу клиентов)\\b",
+    r"\\b(мои услуги|мое портфолио|моё портфолио|мои кейсы)\\b.{0,100}\\b(сайт|лендинг|разработ|дизайн|бот)\\w*",
+]
+
 PROMO_PATTERNS = [
     r"\bузнать больше\b",
     r"\bбольше проектов в нашем боте\b",
@@ -98,6 +105,8 @@ def lead_rejection_reason(text, ignore_words, min_length=20):
         return "вакансия или поиск сотрудника"
     if _matches_any(normalized, PROMO_PATTERNS):
         return "реклама или агрегатор"
+    if _matches_any(normalized, SELF_PROMO_PATTERNS):
+        return "самореклама исполнителя"
 
     for pattern, reason in COMPLEX_SCOPE_PATTERNS:
         if re.search(pattern, normalized, re.IGNORECASE):
