@@ -70,6 +70,14 @@ class LeadFilterTests(unittest.TestCase):
         text = "Заказ #901: создать простой сайт-каталог интернет-магазина, без корзины и онлайн-оплаты."
         self.assertIsNone(lead_rejection_reason(text, IGNORE))
 
+    def test_rejects_bitrix_development_request(self):
+        text = "Ищу веб-разработчика для сайта на 1С-Битрикс, редакция Бизнес."
+        self.assertIn("1С/Битрикс", lead_rejection_reason(text, IGNORE))
+
+    def test_accepts_bitrix_as_incidental_context(self):
+        text = "Нужен простой лендинг для компании, у нас уже есть сайт на Битрикс."
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
     def test_rejects_online_shop_with_checkout(self):
         text = "Нужен интернет-магазин с корзиной, онлайн-оплатой и эквайрингом."
         self.assertIn("интернет-магазин", lead_rejection_reason(text, IGNORE))
