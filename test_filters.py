@@ -51,6 +51,18 @@ class LeadFilterTests(unittest.TestCase):
             "нет явного намерения заказать услугу",
         )
 
+    def test_rejects_clear_self_promotion(self):
+        text = "Делаю сайты под ключ на Tilda, ищу новые проекты и клиентов."
+        self.assertEqual(lead_rejection_reason(text, IGNORE), "самореклама исполнителя")
+
+    def test_rejects_developer_service_offer(self):
+        text = "Разрабатываю Telegram-ботов на заказ, возьму в работу новые проекты."
+        self.assertEqual(lead_rejection_reason(text, IGNORE), "самореклама исполнителя")
+
+    def test_accepts_customer_request_asking_for_portfolio(self):
+        text = "Нужен сайт для студии. Пришлите портфолио и стоимость разработки."
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
     def test_keyword_detection_is_case_insensitive(self):
         self.assertEqual(find_keyword("НУЖЕН САЙТ для проекта", ["нужен сайт"]), "нужен сайт")
 
