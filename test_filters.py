@@ -7,6 +7,14 @@ IGNORE = ["казино", "ставки", "крипто", "розыгрыш", "�
 
 
 class LeadFilterTests(unittest.TestCase):
+    def test_accepts_short_website_request(self):
+        text = "Создать сайт"
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+    def test_accepts_short_website_request_with_budget(self):
+        text = "Нужен сайт, бюджет 20 000 рублей"
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
     def test_accepts_clear_website_order(self):
         text = "Заказ #123. Нужно создать сайт для небольшой студии, бюджет обсудим."
         self.assertIsNone(lead_rejection_reason(text, IGNORE))
