@@ -88,10 +88,8 @@ def _matches_any(text, patterns):
     return any(re.search(pattern, text, re.IGNORECASE) for pattern in patterns)
 
 
-def lead_rejection_reason(text, ignore_words, min_length=20):
+def lead_rejection_reason(text, ignore_words):
     normalized = normalize(text)
-    if len(normalized) < min_length:
-        return "короткое сообщение"
 
     ignored = next(
         (normalize(word) for word in ignore_words if normalize(word) in normalized),
@@ -117,5 +115,5 @@ def lead_rejection_reason(text, ignore_words, min_length=20):
     return None
 
 
-def looks_like_spam(text, ignore_words, min_length=20):
-    return lead_rejection_reason(text, ignore_words, min_length) is not None
+def looks_like_spam(text, ignore_words):
+    return lead_rejection_reason(text, ignore_words) is not None
