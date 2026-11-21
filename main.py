@@ -160,8 +160,7 @@ async def scan_source(http, conn, source, test_mode=False):
         keyword = find_keyword(message_text, SETTINGS.get("keywords", []))
         rejection_reason = lead_rejection_reason(
             message_text,
-            SETTINGS.get("ignore_words", []),
-            int(SETTINGS.get("min_message_length", 20))
+            SETTINGS.get("ignore_words", [])
         )
         is_spam = rejection_reason is not None
         if keyword:
