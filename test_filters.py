@@ -199,5 +199,22 @@ class LeadFilterTests(unittest.TestCase):
         )
 
 
+    def test_rejects_site_with_online_payment(self):
+        text = "Нужно сделать сайт с возможностью оплаты через сайт."
+        self.assertIn("онлайн-оплата", lead_rejection_reason(text, IGNORE))
+
+    def test_rejects_account_with_purchase_history(self):
+        text = "Нужно разработать сайт с личным кабинетом, где хранится информация о созданных покупках."
+        self.assertIn("личный кабинет с бизнес-логикой", lead_rejection_reason(text, IGNORE))
+
+    def test_rejects_stopped_search_post(self):
+        text = "Нужно сделать сайт лендинг. Есть разработчики? сразу с кейсом. Поиск остановлен."
+        self.assertEqual(lead_rejection_reason(text, IGNORE), "реклама или агрегатор")
+
+    def test_rejects_team_designer_recruitment(self):
+        text = "В команду нужен гениальный дизайнер, который может сделать дизайн, сайт и презентации."
+        self.assertEqual(lead_rejection_reason(text, IGNORE), "вакансия или поиск сотрудника")
+
+
 if __name__ == "__main__":
     unittest.main()
