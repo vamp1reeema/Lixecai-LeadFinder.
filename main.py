@@ -171,16 +171,24 @@ async def scan_source(http, conn, source, test_mode=False):
                 source, message_id, keyword, rejection_reason or "пропущено фильтром", message_text[:240]
             )
         if keyword and not is_spam:
-            try:
-                await send_lead(
-                    http, BOT_TOKEN, BOT_CHAT_ID, source, message_id, message_text, keyword
-                )
+            if test_mode:
+                # Dry-run: count eligible leads, but never send duplicate Telegram alerts.
                 stats["leads"] += 1
-                logging.info("Уведомление отправлено: %s/%s", source, message_id)
-            except Exception:
-                stats["errors"] += 1
-                logging.exception("Не удалось отправить уведомление; остановка источника")
-                return stats
+                logging.info(
+                    "ТЕСТ: подходящая заявка (НЕ ОТПРАВЛЯЮ): %s/%s keyword=%r text=%r",
+                    source, message_id, keyword, message_text[:500]
+                )
+            else:
+                try:
+                    await send_lead(
+                        http, BOT_TOKEN, BOT_CHAT_ID, source, message_id, message_text, keyword
+                    )
+                    stats["leads"] += 1
+                    logging.info("Уведомление отправлено: %s/%s", source, message_id)
+                except Exception:
+                    stats["errors"] += 1
+                    logging.exception("Не удалось отправить уведомление; остановка источника")
+                    return stats
 
         if not test_mode:
             set_last_id(conn, source, message_id)
