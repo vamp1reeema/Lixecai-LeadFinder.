@@ -93,17 +93,25 @@ BUYER_INTENT_PATTERNS = [
 
 
 def _has_service_buyer_intent(text):
-    # Keep the intent and the requested service in the same sentence.
+    # The buyer-intent phrase must be close to the requested service.
     # This avoids incidental mentions in posts about unrelated vacancies.
     sentences = re.split(r"[.!?;\n]+", text)
     service = re.compile(SERVICE_TERMS, re.IGNORECASE)
     for sentence in sentences:
         sentence = sentence.strip()
-        if not sentence or not service.search(sentence):
+        service_matches = list(service.finditer(sentence))
+        if not service_matches:
             continue
         for pattern in BUYER_INTENT_PATTERNS:
-            if re.search(pattern, sentence, re.IGNORECASE):
-                return True
+            for intent_match in re.finditer(pattern, sentence, re.IGNORECASE):
+                for service_match in service_matches:
+                    distance = max(
+                        0,
+                        service_match.start() - intent_match.end(),
+                        intent_match.start() - service_match.end(),
+                    )
+                    if distance <= 50:
+                        return True
     return False
 
 
