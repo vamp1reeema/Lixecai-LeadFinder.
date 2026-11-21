@@ -151,6 +151,21 @@ class LeadFilterTests(unittest.TestCase):
             "самореклама исполнителя",
         )
 
+    def test_rejects_studio_mockup_post_for_its_clients(self):
+        text = (
+            "Гантели, беговые дорожки и сила воли сами себя в интернете не представят — "
+            "им нужен сайт с характером. Макет сайта фитнес-клуба для наших клиентов "
+            "мы собрали в тёмной палитре с электрически-синими акцентами."
+        )
+        self.assertEqual(
+            lead_rejection_reason(text, IGNORE),
+            "самореклама исполнителя",
+        )
+
+    def test_accepts_customer_site_for_their_own_customers(self):
+        text = "Нужно создать сайт для наших клиентов, чтобы они могли записываться на консультации."
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
     def test_rejects_agency_case_study(self):
         text = "Кейс разработка сайта: продумали визуальную подачу для наших клиентов."
         self.assertEqual(
