@@ -38,6 +38,10 @@ class LeadFilterTests(unittest.TestCase):
             "подборка нескольких заказов, а не отдельная заявка",
         )
 
+    def test_rejects_site_for_video_streaming(self):
+        text = "Создать сайт для просмотра видео трансляций."
+        self.assertIn("видеосервис", lead_rejection_reason(text, IGNORE))
+
     def test_rejects_complex_mini_app(self):
         text = "Нужно разработать Telegram Mini App с личным кабинетом и оплатой."
         self.assertIn("слишком сложный проект", lead_rejection_reason(text, IGNORE))
