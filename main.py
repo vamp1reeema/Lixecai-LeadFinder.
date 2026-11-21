@@ -222,10 +222,15 @@ async def run():
                     total["errors"] += 1
                     logging.exception("Ошибка при проверке источника %s", source)
 
+            lead_count_label = (
+                "подходящих заявок (без отправки)" if test_mode
+                else "уведомлений отправлено"
+            )
             logging.info(
                 "Итог сканирования: проверено=%s, совпадений по ключам=%s, "
-                "заявок отправлено=%s, ошибок=%s",
-                total["checked"], total["matches"], total["leads"], total["errors"]
+                "%s=%s, ошибок=%s",
+                total["checked"], total["matches"], lead_count_label,
+                total["leads"], total["errors"]
             )
             try:
                 await send_status(
