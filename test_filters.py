@@ -144,6 +144,34 @@ class LeadFilterTests(unittest.TestCase):
         self.assertEqual(lead_rejection_reason(text, IGNORE), "самореклама исполнителя")
 
 
+    def test_rejects_self_promo_with_customer_call_to_action(self):
+        text = "Если вашему проекту нужен сайт, который хочется рассматривать, напишите мне «САЙТ»."
+        self.assertEqual(
+            lead_rejection_reason(text, IGNORE),
+            "самореклама исполнителя",
+        )
+
+    def test_rejects_agency_case_study(self):
+        text = "Кейс разработка сайта: продумали визуальную подачу для наших клиентов."
+        self.assertEqual(
+            lead_rejection_reason(text, IGNORE),
+            "самореклама исполнителя",
+        )
+
+    def test_rejects_portfolio_story_about_completed_client_site(self):
+        text = "Лена пришла по рекомендации. Сайт для Лены мы создавали в живом ритме."
+        self.assertEqual(
+            lead_rejection_reason(text, IGNORE),
+            "самореклама исполнителя",
+        )
+
+    def test_rejects_senior_developer_recruitment(self):
+        text = "Ищу разработчика уровня Senior team-lead. Занятость full-time. Отправляйте CV."
+        self.assertEqual(
+            lead_rejection_reason(text, IGNORE),
+            "вакансия или поиск сотрудника",
+        )
+
     def test_accepts_bot_request_for_sales_team(self):
         text = "Нужен Telegram-бот в команду продаж для обработки заявок."
         self.assertIsNone(lead_rejection_reason(text, IGNORE))
