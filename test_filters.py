@@ -144,5 +144,17 @@ class LeadFilterTests(unittest.TestCase):
         self.assertEqual(lead_rejection_reason(text, IGNORE), "самореклама исполнителя")
 
 
+    def test_accepts_bot_request_for_sales_team(self):
+        text = "Нужен Telegram-бот в команду продаж для обработки заявок."
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+    def test_still_rejects_explicit_team_hiring(self):
+        text = "Ищем разработчика в команду на полный день, опыт от 2 лет."
+        self.assertEqual(
+            lead_rejection_reason(text, IGNORE),
+            "вакансия или поиск сотрудника",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
