@@ -69,19 +69,42 @@ COMPLEX_SCOPE_PATTERNS = [
 ]
 
 
+# A request must be about the service we provide, not merely mention it
+# somewhere in a post about hiring a marketer or promoting another product.
+SERVICE_TERMS = (
+    r"(?:сайт\w*|лендинг\w*|веб[- ]?сайт\w*|"
+    r"телеграм[- ]?бот\w*|telegram[- ]?бот\w*|бот\w*|"
+    r"автоматизац\w*)"
+)
+
 BUYER_INTENT_PATTERNS = [
     r"\b(срочный запрос|есть задача|есть заказ|ищу исполнителя|нужен исполнитель)\b",
     r"\b(мне нужен|нам нужен|нужен|нужна|нужно|нужны)\b",
-    r"\b(ищу|ищем)\b.{0,100}\b(исполнител|фрилансер|человек|специалист|разработчик|дизайнер)\w*\b",
-    r"\bкто (может|сможет|умеет)\b",
-    r"\b(подскажите|посоветуйте)\b.{0,100}\b(исполнител|разработчик|дизайнер|сделать|создать)\w*\b",
+    r"\b(ищу|ищем)\b.{0,80}\b(исполнител|фрилансер|человек|специалист|разработчик|дизайнер)\w*\b",
+    r"\bкто (может|сможет|умеет|сделает)\b",
+    r"\b(подскажите|посоветуйте)\b.{0,80}\b(исполнител|разработчик|дизайнер|сделать|создать)\w*\b",
     r"\b(хочу заказать|хотим заказать|готов(а|ы) оплатить|бюджет на разработку)\b",
     r"\b(кто возьмется|кто возьмётся)\b",
     r"\bзаказ\s*#?\s*\d+\b",
     r"\b(нужно|необходимо)\s+(сделать|создать|разработать|сверстать)\b",
-    r"\b(создать|сделать|разработать|сверстать)\s+(сайт|лендинг|телеграм[- ]?бот|telegram[- ]?бот|бот)\b",
-    r"\b(разработка|создание|верстка|доработка)\s+(сайта|лендинга|бота)\b",
+    r"\b(создать|сделать|разработать|сверстать|заказать)\s+(сайт|лендинг|телеграм[- ]?бот|telegram[- ]?бот|бот|автоматизац\w*)\b",
+    r"\b(разработка|создание|верстка|доработка)\s+(сайта|лендинга|бота|автоматизац\w*)\b",
 ]
+
+
+def _has_service_buyer_intent(text):
+    # Keep the intent and the requested service in the same sentence.
+    # This avoids incidental mentions in posts about unrelated vacancies.
+    sentences = re.split(r"[.!?;\n]+", text)
+    service = re.compile(SERVICE_TERMS, re.IGNORECASE)
+    for sentence in sentences:
+        sentence = sentence.strip()
+        if not sentence or not service.search(sentence):
+            continue
+        for pattern in BUYER_INTENT_PATTERNS:
+            if re.search(pattern, sentence, re.IGNORECASE):
+                return True
+    return False
 
 
 def _matches_any(text, patterns):
@@ -110,7 +133,7 @@ def lead_rejection_reason(text, ignore_words):
         if re.search(pattern, normalized, re.IGNORECASE):
             return f"слишком сложный проект: {reason}"
 
-    if not _matches_any(normalized, BUYER_INTENT_PATTERNS):
+    if not _has_service_buyer_intent(normalized):
         return "нет явного намерения заказать услугу"
     return None
 
