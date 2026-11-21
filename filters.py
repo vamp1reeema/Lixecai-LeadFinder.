@@ -17,7 +17,7 @@ def find_keyword(text, keywords):
 
 # Hiring posts are not customer requests, even when they mention bots or websites.
 VACANCY_PATTERNS = [
-    r"\bв команду\b",
+    # "В команду" alone is not a vacancy: a customer may describe the team using the requested site or bot.
     r"\b(ищем|требуется|требуются|приглашаем)\b.{0,70}\b(сотрудник|специалист|разработчик|инженер|тестировщик|менеджер|дизайнер|qa|программист|маркетолог|таргетолог)\w*\b",
     r"\b(вакансия|вакансии|зарплата|оклад|заработная плата)\b",
     r"\b(требования к кандидату|обязанности кандидата|опыт работы от|коммерческий опыт|полный день|гибкий график)\b",
