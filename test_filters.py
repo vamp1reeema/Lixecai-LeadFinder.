@@ -59,6 +59,17 @@ class LeadFilterTests(unittest.TestCase):
             "нет явного намерения заказать услугу",
         )
 
+    def test_rejects_incidental_bot_mention_in_targetologist_post(self):
+        text = (
+            "\u200b #таргетолог Для русскоязычных мини-продуктов об AI ищут таргетолога Facebook Ads. "
+            "Нужно тестировать связки на небольших бюджетах и масштабировать рекламу по CPA. "
+            "Воронка ведёт через посадочную страницу и Telegram-бота, продукт стоит 990 ₽"
+        )
+        self.assertEqual(
+            lead_rejection_reason(text, IGNORE),
+            "нет явного намерения заказать услугу",
+        )
+
     def test_rejects_clear_self_promotion(self):
         text = "Делаю сайты под ключ на Tilda, ищу новые проекты и клиентов."
         self.assertEqual(lead_rejection_reason(text, IGNORE), "самореклама исполнителя")
