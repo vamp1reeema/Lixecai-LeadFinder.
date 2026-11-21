@@ -71,6 +71,24 @@ class LeadFilterTests(unittest.TestCase):
         text = "Нужен сайт для студии. Пришлите портфолио и стоимость разработки."
         self.assertIsNone(lead_rejection_reason(text, IGNORE))
 
+    def test_rejects_unrelated_targetologist_request_with_incidental_bot_mention(self):
+        text = "Нужен таргетолог для рекламы AI-продукта. У нас уже есть лендинг и Telegram-бот."
+        self.assertEqual(
+            lead_rejection_reason(text, IGNORE),
+            "нет явного намерения заказать услугу",
+        )
+
+    def test_rejects_incidental_website_and_bot_mentions(self):
+        text = "Ищем специалиста по рекламе. В проекте уже используются сайт и Telegram-бот."
+        self.assertEqual(
+            lead_rejection_reason(text, IGNORE),
+            "вакансия или поиск сотрудника",
+        )
+
+    def test_accepts_direct_bot_order_even_with_extra_context(self):
+        text = "Нужен Telegram-бот для записи клиентов. Бюджет обсудим."
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
     def test_keyword_detection_is_case_insensitive(self):
         self.assertEqual(find_keyword("НУЖЕН САЙТ для проекта", ["нужен сайт"]), "нужен сайт")
 
