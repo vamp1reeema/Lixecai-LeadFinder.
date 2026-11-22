@@ -232,5 +232,25 @@ class LeadFilterTests(unittest.TestCase):
             lead_rejection_reason(text, IGNORE),
         )
 
+    def test_rejects_site_plus_personal_account_without_explicit_payment_details(self):
+        text = (
+            "Разработка сайта + личный кабинет от 1 млн руб. "
+            "Личный кабинет уже существует — нужны два варианта: "
+            "сохранить текущий ЛК, либо разработать сайт + ЛК полностью с нуля."
+        )
+        self.assertIn("сайт с личным кабинетом", lead_rejection_reason(text, IGNORE))
+
+    def test_rejects_custom_shopping_cart_behavior(self):
+        text = (
+            "Создать сайт для магазина. Добавив товар в корзину, "
+            "важно, чтобы не выпрыгивало диалоговое окно заказа, "
+            "а товар автоматически попадал в корзину."
+        )
+        self.assertIn("нестандартная логика корзины", lead_rejection_reason(text, IGNORE))
+
+    def test_accepts_simple_website_without_account_or_custom_cart(self):
+        text = "Нужно создать сайт-визитку для небольшой компании, бюджет обсудим."
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
 if __name__ == "__main__":
     unittest.main()
