@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 from config import BOT_TOKEN, BOT_CHAT_ID, SETTINGS
 from database import connect, get_last_id, set_last_id
-from filters import find_keyword, lead_rejection_reason
+from filters import classify_lead_risks, find_keyword, lead_rejection_reason
 from notifier import send_lead, send_status
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -181,7 +181,8 @@ async def scan_source(http, conn, source, test_mode=False):
             else:
                 try:
                     await send_lead(
-                        http, BOT_TOKEN, BOT_CHAT_ID, source, message_id, message_text, keyword
+                        http, BOT_TOKEN, BOT_CHAT_ID, source, message_id, message_text, keyword,
+                        risk_labels=classify_lead_risks(message_text)
                     )
                     stats["leads"] += 1
                     logging.info("Уведомление отправлено: %s/%s", source, message_id)
