@@ -288,7 +288,7 @@ class LeadRiskLabelTests(unittest.TestCase):
         self.assertIsNone(lead_rejection_reason(text, IGNORE))
 
     def test_marks_online_store_scope_for_clarification(self):
-        text = "Нужен интернет-магазин для продажи спортивных товаров."
+        text = "Заказ: создать сайт интернет-магазин для продажи спортивных товаров."
         self.assertTrue(any("Интернет-магазин" in x for x in classify_lead_risks(text)))
         self.assertIsNone(lead_rejection_reason(text, IGNORE))
 
