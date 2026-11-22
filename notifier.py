@@ -29,18 +29,24 @@ async def send_status(
             raise RuntimeError(f"Telegram Bot API error: {result}")
 
 
-async def send_lead(session, token, chat_id, source, message_id, text, keyword):
+async def send_lead(session, token, chat_id, source, message_id, text, keyword, risk_labels=None):
     excerpt = text[:1200] + ("…" if len(text) > 1200 else "")
     link = f"https://t.me/{source}/{message_id}"
     lines = [
         "🔎 <b>Найдено сообщение с потенциальной заявкой</b>",
         f"💬 <b>Публичный источник:</b> {html.escape(source)}",
         f"🎯 <b>Совпадение:</b> {html.escape(keyword)}",
+    ]
+    if risk_labels:
+        lines.append("")
+        lines.append("<b>На что обратить внимание:</b>")
+        lines.extend(html.escape(label) for label in risk_labels)
+    lines.extend([
         "",
         html.escape(excerpt),
         "",
         f'<a href="{link}">Открыть сообщение</a>'
-    ]
+    ])
     url = f"https://api.telegram.org/bot{token}/sendMessage"
     async with session.post(url, json={
         "chat_id": chat_id,
