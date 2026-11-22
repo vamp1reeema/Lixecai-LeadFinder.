@@ -163,5 +163,51 @@ def lead_rejection_reason(text, ignore_words):
     return None
 
 
+
+def classify_lead_risks(text):
+    """Return advisory risk labels; never use these labels to reject a lead."""
+    normalized = normalize(text)
+    risks = []
+
+    if re.search(
+        r"\b(оплата|оплатить|расчет|расчёт)\b.{0,45}\b(по факту|после результата|после выполнения)\b|"
+        r"\b(по факту|после результата|после выполнения)\b.{0,45}\b(оплата|оплатить|расчет|расчёт)\b",
+        normalized,
+    ):
+        risks.append("⚠️ Оплата по факту — коммерческий риск")
+
+    if re.search(
+        r"\b(бесплатн\w*|без оплаты|безвозмездн\w*)\b.{0,70}\b(тестов\w*|макет\w*)\b|"
+        r"\b(тестов\w*|макет\w*)\b.{0,70}\b(бесплатн\w*|без оплаты|безвозмездн\w*)\b",
+        normalized,
+    ) or re.search(r"\b(тестовая страница|тестовое задание)\b", normalized):
+        risks.append("⚠️ Бесплатное тестовое — уточнить условия")
+
+    if re.search(
+        r"\b(сайт|лендинг|разработ\w* сайта)\b.{0,100}\b("
+        r"контекстн\w* реклам\w*|таргет\w* реклам\w*|настройк\w* реклам\w*|"
+        r"запуск\w* реклам\w*|директ|рекламн\w* кампани\w*)\b|"
+        r"\b(контекстн\w* реклам\w*|таргет\w* реклам\w*|настройк\w* реклам\w*|"
+        r"запуск\w* реклам\w*|директ|рекламн\w* кампани\w*)\b.{0,100}\b(сайт|лендинг)\b",
+        normalized,
+    ):
+        risks.append("⚠️ Смешанный объём: сайт + реклама")
+
+    if re.search(r"\b(интернет-магазин\w*|онлайн-магазин\w*|e-commerce)\b", normalized):
+        risks.append("❓ Интернет-магазин — уточнить корзину, оплату и интеграции")
+
+    if re.search(
+        r"\b(сделать сайт под ключ|создать сайт под ключ|нужен сайт под ключ|"
+        r"сайт под ключ|сделать сайт|создать сайт)\b",
+        normalized,
+    ) and not re.search(
+        r"\b(лендинг|сайт-визитк\w*|каталог|5[-– ]?6 экран\w*|"
+        r"одностраничн\w*|многостраничн\w*|тильд\w*|tilda|wordpress|figma)\b",
+        normalized,
+    ):
+        risks.append("❓ Мало деталей — уточнить объём и функционал")
+
+    return risks
+
 def looks_like_spam(text, ignore_words):
     return lead_rejection_reason(text, ignore_words) is not None
