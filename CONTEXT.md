@@ -381,3 +381,5 @@ CI:
 
 ### Следующий шаг
 Нужен новый полный TEST_MODE run на текущем main, чтобы проверить те же реальные публикации с новыми фильтрами и подтвердить, что оба ложноположительных кандидата больше не попадают в список. Доступные GitHub actions-инструменты не умеют запускать workflow_dispatch; пользователь должен один раз запустить .github/workflows/scanner.yml вручную с test_mode=true. Обычный режим не запускать.
+
+- Run #42 (после обновления CONTEXT.md): https://github.com/vamp1reeema/Lixecai-LeadFinder./actions/runs/44967917963 — SUCCESS на commit 60ea7ae3ba2c9d0c9683f032eb5fbfcbd949a011; повторно подтверждено 48 тестов, OK.
