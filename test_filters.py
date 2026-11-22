@@ -1,6 +1,6 @@
 import unittest
 
-from filters import find_keyword, lead_rejection_reason
+from filters import classify_lead_risks, find_keyword, lead_rejection_reason
 
 
 IGNORE = ["казино", "ставки", "крипто", "розыгрыш", "подпишись", "реферал"]
@@ -269,6 +269,37 @@ class LeadFilterTests(unittest.TestCase):
     def test_accepts_simple_website_without_account_or_custom_cart(self):
         text = "Нужно создать сайт-визитку для небольшой компании, бюджет обсудим."
         self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+
+class LeadRiskLabelTests(unittest.TestCase):
+    def test_marks_payment_after_completion_without_rejecting(self):
+        text = "Нужен сайт для ремонта, оплата по факту."
+        self.assertTrue(any("Оплата по факту" in x for x in classify_lead_risks(text)))
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+    def test_marks_free_test_page_without_rejecting(self):
+        text = "Нужен лендинг для косметологии, преимуществом будет тестовая страница."
+        self.assertTrue(any("Бесплатное тестовое" in x for x in classify_lead_risks(text)))
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+    def test_marks_site_plus_advertising(self):
+        text = "Нужен сайт компании и настройка контекстной рекламы."
+        self.assertTrue(any("сайт + реклама" in x for x in classify_lead_risks(text)))
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+    def test_marks_online_store_scope_for_clarification(self):
+        text = "Нужен интернет-магазин для продажи спортивных товаров."
+        self.assertTrue(any("Интернет-магазин" in x for x in classify_lead_risks(text)))
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+    def test_marks_vague_site_request(self):
+        text = "Заказ #25871: сделать сайт под ключ."
+        self.assertTrue(any("Мало деталей" in x for x in classify_lead_risks(text)))
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+    def test_no_risk_labels_for_clear_landing(self):
+        text = "Нужен лендинг для логопеда на Tilda, 6 экранов, тексты готовы."
+        self.assertEqual(classify_lead_risks(text), [])
 
 if __name__ == "__main__":
     unittest.main()
