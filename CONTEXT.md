@@ -519,3 +519,13 @@ CI:
 - Изменение cron не привело к появлению scheduled run в течение нескольких часов. Причина отсутствия schedule пока не подтверждена; возможны настройки/состояние GitHub Actions для workflow/repository, которые текущий GitHub connector не позволяет прочитать (endpoint workflows/settings недоступен).
 - Не запускать обычный scanner вручную: он имеет TEST_MODE=0 и может отправить лиды/изменить SQLite state. Пользователю ничего делать не требуется на данном этапе.
 - Следующий шаг: дождаться завершения runs #58/#59, проверить их результат; затем повторно проверить runs. Если cron так и не создаёт событие, потребуется проверить в GitHub UI, включён ли workflow, и доступность scheduled actions для репозитория; это единственное действие, которое может потребовать пользователя, если API-доступ не позволит включить workflow.
+
+
+### Повторная проверка CONTEXT и Actions (2026-11-22, 19:12 UTC+4)
+- Повторно прочитан актуальный `CONTEXT.md`; blob SHA до обновления: `e2a012c9fb13fb686e01f09e6136b7b460cafef2`.
+- Сверен реальный файл `.github/workflows/scanner.yml`: workflow содержит `workflow_dispatch` и `schedule`, cron установлен `2-59/5 * * * *`; шаги тестов фильтров, восстановления SQLite state и запуска сканера присутствуют. TEST_MODE для schedule остаётся `0`, для ручного запуска зависит от input `test_mode`.
+- Повторно проверен Actions API. Последний scanner run всё ещё #79: `workflow_dispatch`, SUCCESS, TEST_MODE=1, создан 2026-11-22 10:18:36Z. После него новых scheduled runs нет; последние schedule #78 и #77 — FAILURE на старом SHA `86bb26aa...`. Значит, автоматический запуск не подтверждён.
+- Проверены тестовые runs #58, #59 и #60: все COMPLETED/SUCCESS. В run #60 (ID `45036901471`, SHA `43e828ca2af71e6472f62bc387317793db547505`) job `tests` и шаг `Run filter tests` завершились SUCCESS.
+- Код сканера и настройки источников в этой проверке не менялись. Обычный scanner вручную не запускался, чтобы не отправлять лиды и не менять рабочее состояние.
+- Вывод: тесты и конфигурация workflow проходят проверку, но GitHub не создаёт событие `schedule`. Через доступный GitHub connector статус enable/disable workflow прочитать не удалось; причина пока не установлена. Возможные причины — workflow отключён в Actions UI либо проблема с actor, связанная с расписанием. GitHub Docs: https://docs.github.com/en/actions/how-tos/troubleshoot-workflows и https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows.
+- Следующий шаг: проверить в GitHub → Actions → LeadFinder, отображается ли кнопка **Enable workflow** (если да — нажать её). Если workflow уже включён, проверить активность аккаунта, который последним менял cron. До появления успешного события `schedule` не считать парсер автоматически работающим.
