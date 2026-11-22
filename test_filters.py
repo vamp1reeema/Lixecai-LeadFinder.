@@ -220,5 +220,17 @@ class LeadFilterTests(unittest.TestCase):
         self.assertEqual(lead_rejection_reason(text, IGNORE), "вакансия или поиск сотрудника")
 
 
+    def test_rejects_abbreviated_account_with_purchase_history(self):
+        text = (
+            "Разработка сайта на базе конструктора Wix или Tilda. "
+            "Предусмотреть создание ЛК через Google с подтверждением по email, "
+            "в ЛК вносится информация о созданных покупках. "
+            "Выбор направлений товара и отправка заявки."
+        )
+        self.assertIn(
+            "личный кабинет с бизнес-логикой",
+            lead_rejection_reason(text, IGNORE),
+        )
+
 if __name__ == "__main__":
     unittest.main()
