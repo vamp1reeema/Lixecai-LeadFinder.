@@ -248,6 +248,24 @@ class LeadFilterTests(unittest.TestCase):
         )
         self.assertIn("нестандартная логика корзины", lead_rejection_reason(text, IGNORE))
 
+    def test_rejects_site_with_account_favorites_and_personal_recommendations(self):
+        text = (
+            "Создать информационный сайт о кино. Личный кабинет пользователя "
+            "с возможностью добавления фильмов в избранное, формирования собственных "
+            "списков фильмов и системы персональных рекомендаций на основе действий."
+        )
+        self.assertIn(
+            "личный кабинет с рекомендациями",
+            lead_rejection_reason(text, IGNORE),
+        )
+
+    def test_rejects_online_store_with_unspecified_extra_functionality(self):
+        text = "Сделать сайт интернет-магазина под ключ с дополнительными возможностями и функционалом."
+        self.assertIn(
+            "интернет-магазин с дополнительным функционалом",
+            lead_rejection_reason(text, IGNORE),
+        )
+
     def test_accepts_simple_website_without_account_or_custom_cart(self):
         text = "Нужно создать сайт-визитку для небольшой компании, бюджет обсудим."
         self.assertIsNone(lead_rejection_reason(text, IGNORE))
