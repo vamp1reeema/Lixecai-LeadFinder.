@@ -18,13 +18,13 @@ def find_keyword(text, keywords):
 # Hiring posts are not customer requests, even when they mention bots or websites.
 VACANCY_PATTERNS = [
     # "В команду" alone is not a vacancy: a customer may describe the team using the requested site or bot.
-    r"\b(ищем|требуется|требуются|приглашаем)\b.{0,70}\b(сотрудник|специалист|разработчик|инженер|тестировщик|менеджер|дизайнер|qa|программист|маркетолог|таргетолог)\w*\b",
     r"\b(вакансия|вакансии|зарплата|оклад|заработная плата)\b",
     r"\b(требования к кандидату|обязанности кандидата|опыт работы от|коммерческий опыт|полный день|гибкий график)\b",
     r"\b(ищу работу|ищу вакансию|рассмотрю предложения о работе)\b",
     r"\b(senior|middle|junior)\s+(backend|frontend|full[- ]?stack|python|php|java|разработчик|developer)\b",
     r"\b(от 1|от 2|от 3|минимум 1|минимум 2)\s+лет\s+(коммерческого\s+)?опыта\b",
-    r"\b(ищем|нанимаем)\b.{0,100}\b(в команду|на работу|на позицию)\b",
+    # Hiring language is only decisive with an explicit employment destination.
+    r"\b(ищем|нанимаем)\b.{0,100}\b(на работу|на позицию)\b",
     r"\bв команду\s+(нужен|нужна|нужны|требуется)\s+.{0,45}\b(специалист|дизайнер|разработчик|программист|маркетолог|менеджер)\w*\b",
     r"\b(разработчик|инженер|программист)\w*\b.{0,50}\bуровня\s+(senior|middle|junior)\b",
     r"\b(отправляйте|присылайте|направляйте)\s+(свое\s+)?(резюме|cv)\b",
