@@ -27,6 +27,15 @@ class LeadFilterTests(unittest.TestCase):
         text = "Нужен лендинг на Tilda для нового проекта. Кто возьмётся?"
         self.assertIsNone(lead_rejection_reason(text, IGNORE))
 
+
+    def test_accepts_developer_search_for_customer_website(self):
+        text = "Ищем разработчика для создания сайта компании. Нужно сделать лендинг для клиентов."
+        self.assertIsNone(lead_rejection_reason(text, IGNORE))
+
+    def test_does_not_classify_team_word_as_vacancy_by_itself(self):
+        text = "В команду нужен дизайнер для разработки сайта продукта."
+        self.assertNotEqual(lead_rejection_reason(text, IGNORE), "вакансия или поиск сотрудника")
+
     def test_rejects_vacancy(self):
         text = "Ищем разработчика в команду. Опыт работы от 2 лет, полный день."
         self.assertEqual(lead_rejection_reason(text, IGNORE), "вакансия или поиск сотрудника")
